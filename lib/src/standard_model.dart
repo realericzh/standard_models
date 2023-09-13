@@ -892,9 +892,7 @@ class StandardNode<N extends StandardNode<N>> implements _StandardMethods<N> {
 typedef StandardModelChanges<N extends StandardNode<N>> = void Function(
     StandardModel<N> model, N? parent, Iterable<N> children, int index);
 
-typedef StandardNodeBuilder<N extends StandardNode<N>> = Tuple2<N?, dynamic> Function(dynamic data);
-
-typedef StandardNodeBuildResult<N extends StandardNode<N>> = Tuple2<N?, dynamic>;
+typedef NodeBuildResult<N extends StandardNode<N>> = Tuple2<N, dynamic>;
 
 class StandardModel<N extends StandardNode<N>> implements _StandardMethods<N> {
   StandardModel({
@@ -1115,51 +1113,49 @@ class StandardModel<N extends StandardNode<N>> implements _StandardMethods<N> {
     }
   }
 
-  StandardModel.fromJson(StandardNodeBuilder<N> builder, String data,
+  StandardModel.fromJson(NodeBuildResult<N>? Function(dynamic data) builder, String data,
       {this.collapsable = false, this.checkable = false}) {
     _root._model = this;
 
     List<N>? childNodes;
     dynamic value = jsonDecode(data);
-    if (value == null) {
-      return;
-    } else if (value is List) {
-      if (value.isNotEmpty) {
-        childNodes = _createNodes<N>(value, builder);
+    if (value != null) {
+      if (value is List) {
+        if (value.isNotEmpty) {
+          childNodes = _createNodes<N>(builder, value);
+        }
+      } else {
+        childNodes = _createNodes<N>(builder, [value]);
       }
-    } else {
-      childNodes = _createNodes<N>([value], builder);
-    }
 
-    if (childNodes != null) {
-      _root.appendAll(childNodes);
+      if (childNodes != null) {
+        _root.appendAll(childNodes);
+      }
     }
   }
 
-  static List<N>? _createNodes<N extends StandardNode<N>>(List list, StandardNodeBuilder<N> builder) {
+  static List<N>? _createNodes<N extends StandardNode<N>>(
+      NodeBuildResult<N>? Function(dynamic data) builder, List list) {
     final nodes = <N>[];
     for (final data in list) {
-      Tuple2<N?, dynamic> result = builder(data);
-      if (result.item1 == null) {
-        return null;
-      }
-
-      if (result.item2 != null) {
-        List<N>? childNodes;
-        if (result.item2 is List) {
-          if (result.item2.isNotEmpty) {
-            childNodes = _createNodes(result.item2, builder);
+      final result = builder(data);
+      if (result != null) {
+        if (result.item2 != null) {
+          List<N>? childNodes;
+          if (result.item2 is List) {
+            if (result.item2.isNotEmpty) {
+              childNodes = _createNodes(builder, result.item2);
+            }
+          } else {
+            childNodes = _createNodes(builder, [result.item2]);
           }
-        } else {
-          childNodes = _createNodes([result.item2], builder);
+          if (childNodes != null) {
+            result.item1.appendAll(childNodes);
+          }
         }
 
-        if (childNodes != null) {
-          result.item1!.appendAll(childNodes);
-        }
+        nodes.add(result.item1);
       }
-
-      nodes.add(result.item1!);
     }
 
     return nodes;
