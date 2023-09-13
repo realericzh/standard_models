@@ -1043,6 +1043,7 @@ class StandardModel<N extends StandardNode<N>> implements _StandardMethods<N> {
         _current!._current = true;
         _current!.currentNotifier.value = true;
       }
+      currentNotifier.value = _current;
     }
   }
 
