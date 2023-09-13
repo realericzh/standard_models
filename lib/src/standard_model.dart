@@ -17,25 +17,25 @@ enum TakeMode {
   leafOnly,
 }
 
-abstract class _StandardMethods<T extends StandardNode<T>> {
-  void appendAll(Iterable<T> iterable);
-  void insertAll(int index, Iterable<T> iterable);
-  void removeAll(Iterable<T> iterable);
+abstract class _StandardMethods<N extends StandardNode<N>> {
+  void appendAll(List<N> children);
+  void insertAll(int index, List<N> children);
+  void removeAll(List<N> children);
 
-  void append(T child);
-  void insert(int index, T child);
-  void remove(T child);
+  void append(N child);
+  void insert(int index, N child);
+  void remove(N child);
 
   void clear();
 
-  T? elementAt(dynamic index);
-  T? operator [](dynamic index);
+  N? elementAt(dynamic index);
+  N? operator [](dynamic index);
 
-  void forEach(void Function(T node) action);
-  void removeWhere(bool Function(T node) test);
-  void traverseWhere(bool Function(T node) test);
+  void forEach(void Function(N node) action);
+  void removeWhere(bool Function(N node) test);
+  void traverseWhere(bool Function(N node) test);
 
-  List<T> takeCheckedNodes([TakeMode takeMode = TakeMode.baseOnly]);
+  List<N> takeCheckedNodes([TakeMode takeMode = TakeMode.baseOnly]);
 
   bool get isEmpty;
   bool get isNotEmpty;
@@ -43,11 +43,11 @@ abstract class _StandardMethods<T extends StandardNode<T>> {
   int get length;
 }
 
-class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
+class StandardNode<N extends StandardNode<N>> implements _StandardMethods<N> {
   StandardNode({
     this.key,
-    T? parent,
-    List<T>? children,
+    N? parent,
+    List<N>? children,
     bool? collapsed,
     bool? checked,
   })  : _collapsed = collapsed,
@@ -55,20 +55,20 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
     if (children != null) {
       appendAll(children);
     }
-    parent?.append(this as T);
+    parent?.append(this as N);
   }
 
-  T? _reliableParentRef() {
-    return _parent is T ? _parent as T : null;
+  N? _reliableParentRef() {
+    return _parent is N ? _parent as N : null;
   }
 
-  T? _reliableThisRef() {
-    return this is T ? this as T : null;
+  N? _reliableThisRef() {
+    return this is N ? this as N : null;
   }
 
-  T? get parent => _reliableParentRef();
-  List<T> get children => _children;
-  StandardModel<T>? get model => _model;
+  N? get parent => _reliableParentRef();
+  List<N> get children => _children;
+  StandardModel<N>? get model => _model;
 
   int get index {
     if (_parent?._dirtyIndexf != null) {
@@ -88,9 +88,9 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
 
   final String? key;
 
-  StandardNode<T>? _parent;
-  final List<T> _children = [];
-  StandardModel<T>? _model;
+  StandardNode<N>? _parent;
+  final List<N> _children = [];
+  StandardModel<N>? _model;
 
   int _index = -1;
   int _level = -1;
@@ -112,21 +112,21 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
   late final ValueNotifier<bool?> checkState = ValueNotifier<bool?>(_reliableCheckState());
 
   @override
-  void appendAll(Iterable<T> iterable) {
+  void appendAll(List<N> children) {
     if (_Debug.debug) {
-      List<String?> keys = [];
-      for (final child in iterable) {
+      final keys = <String?>[];
+      for (final child in children) {
         keys.add(child.key);
       }
       _Debug.log('$key: appendAll([${keys.join(', ')}]);');
     }
 
-    if (iterable.isEmpty) {
+    if (children.isEmpty) {
       return;
     }
 
     // 检查节点是否有效
-    for (final child in iterable) {
+    for (final child in children) {
       if (child._parent != null) {
         if (_Debug.debug) {
           _Debug.log('"${child.key}" already has a parent.');
@@ -152,10 +152,10 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
 
     final reviseState = _children.isEmpty;
     // 插入前的通知
-    _model?._beforeInsert(_model!, _reliableThisRef(), iterable, index);
+    _model?._beforeInsert(_model!, _reliableThisRef(), children, index);
     // 实际插入过程
     int childIndex = -1;
-    for (final child in iterable) {
+    for (final child in children) {
       child._parent = this;
       child._index = index + ++childIndex;
       if (_model != null) {
@@ -175,30 +175,30 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
       }
     }
 
-    _children.addAll(iterable);
+    _children.addAll(children);
     // 插入后的通知
-    _model?._afterInsert(_model!, _reliableThisRef(), iterable, index);
+    _model?._afterInsert(_model!, _reliableThisRef(), children, index);
 
     _updateCheckState(reviseState);
     _model?._rebuildList();
   }
 
   @override
-  void insertAll(int index, Iterable<T> iterable) {
+  void insertAll(int index, List<N> children) {
     if (_Debug.debug) {
-      List<String?> keys = [];
-      for (final child in iterable) {
+      final keys = <String?>[];
+      for (final child in children) {
         keys.add(child.key);
       }
       _Debug.log('$key: insertAll($index, [${keys.join(', ')}]);');
     }
 
-    if (iterable.isEmpty) {
+    if (children.isEmpty) {
       return;
     }
 
     // 检查节点是否有效
-    for (final child in iterable) {
+    for (final child in children) {
       if (child._parent != null) {
         if (_Debug.debug) {
           _Debug.log('"${child.key}" already has a parent.');
@@ -229,7 +229,7 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
         }
       }
     } else {
-      final dirtyIndex = index + iterable.length;
+      final dirtyIndex = index + children.length;
       if (_dirtyIndexf != null) {
         if (index > _dirtyIndexf!) {
           _dirtyIndexf = min(dirtyIndex, _dirtyIndexf!);
@@ -248,10 +248,10 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
 
     final reviseState = _children.isEmpty;
     // 插入前的通知
-    _model?._beforeInsert(_model!, _reliableThisRef(), iterable, index);
+    _model?._beforeInsert(_model!, _reliableThisRef(), children, index);
     // 实际插入过程
     int childIndex = -1;
-    for (final child in iterable) {
+    for (final child in children) {
       child._parent = this;
       child._index = index + ++childIndex;
       if (_model != null) {
@@ -270,30 +270,30 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
           break;
       }
     }
-    _children.insertAll(index, iterable);
+    _children.insertAll(index, children);
     // 插入后的通知
-    _model?._afterInsert(_model!, _reliableThisRef(), iterable, index);
+    _model?._afterInsert(_model!, _reliableThisRef(), children, index);
 
     _updateCheckState(reviseState);
     _model?._rebuildList();
   }
 
   @override
-  void removeAll(Iterable<T> iterable) {
+  void removeAll(List<N> children) {
     if (_Debug.debug) {
-      List<String?> keys = [];
-      for (final child in iterable) {
+      final keys = <String?>[];
+      for (final child in children) {
         keys.add(child.key);
       }
       _Debug.log('$key: removeAll([${keys.join(', ')}]);');
     }
 
-    if (iterable.isEmpty) {
+    if (children.isEmpty) {
       return;
     }
 
     // 检查节点是否有效
-    for (final child in iterable) {
+    for (final child in children) {
       if (child._parent != this) {
         if (_Debug.debug) {
           _Debug.log('${child.key} does not belong to this node.');
@@ -309,7 +309,6 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
     }
 
     // 反序将要删除的节点
-    final children = iterable.toList();
     children.sort((lhs, rhs) {
       return rhs._index.compareTo(lhs._index);
     });
@@ -414,27 +413,30 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
   }
 
   @override
-  void append(T child) {
+  void append(N child) {
     appendAll([child]);
   }
 
   @override
-  void insert(int index, T child) {
+  void insert(int index, N child) {
     insertAll(index, [child]);
   }
 
   @override
-  void remove(T child) {
+  void remove(N child) {
     removeAll([child]);
   }
 
-  void _recursiveUpdate(StandardModel<T>? model, int level) {
+  void _recursiveUpdate(StandardModel<N>? model, int level) {
     if (model != null) {
-      this._model = model;
-      this._level = level;
+      _model = model;
+      _level = level;
     } else {
-      this._model = null;
-      this._level = -1;
+      if (_current) {
+        _model!.current = null;
+      }
+      _model = null;
+      _level = -1;
     }
 
     for (final child in _children) {
@@ -490,7 +492,7 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
   }
 
   @override
-  T? elementAt(dynamic index) {
+  N? elementAt(dynamic index) {
     if (index is int) {
       assert(index >= 0 && index < _children.length);
       return _children.elementAt(index);
@@ -500,23 +502,23 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
   }
 
   @override
-  T? operator [](dynamic index) => elementAt(index);
+  N? operator [](dynamic index) => elementAt(index);
 
   @override
-  void forEach(void Function(T node) action) {
+  void forEach(void Function(N node) action) {
     _children.forEach(action);
   }
 
   @override
-  void removeWhere(bool Function(T node) test) {
-    removeAll(_children.where(test));
+  void removeWhere(bool Function(N node) test) {
+    removeAll(_children.where(test).toList());
   }
 
   @override
-  void traverseWhere(bool Function(T node) test) {
-    List<T> stack = [];
-    if (this is T) {
-      stack.add(this as T);
+  void traverseWhere(bool Function(N node) test) {
+    List<N> stack = [];
+    if (this is N) {
+      stack.add(this as N);
     } else if (_children.isNotEmpty) {
       stack.addAll(_children.reversed);
     }
@@ -530,8 +532,8 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
   }
 
   @override
-  List<T> takeCheckedNodes([TakeMode takeMode = TakeMode.baseOnly]) {
-    final checkedNodes = <T>[];
+  List<N> takeCheckedNodes([TakeMode takeMode = TakeMode.baseOnly]) {
+    final checkedNodes = <N>[];
 
     switch (takeMode) {
       case TakeMode.baseOnly:
@@ -828,14 +830,14 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
       _Debug.log('$key: detach();');
     }
 
-    assert(this is T);
-    if (this is T) {
-      _parent?.remove(this as T);
+    assert(this is N);
+    if (this is N) {
+      _parent?.remove(this as N);
     }
   }
 
   void makeCurrent() {
-    _model?.current = this as T;
+    _model?.current = this as N;
   }
 
   void doneCurrent() {
@@ -875,12 +877,12 @@ class StandardNode<T extends StandardNode<T>> implements _StandardMethods<T> {
   }
 }
 
-typedef StandardModelChanges<T extends StandardNode<T>> = void Function(
-    StandardModel<T> model, T? parent, Iterable<T> children, int index);
+typedef StandardModelChanges<N extends StandardNode<N>> = void Function(
+    StandardModel<N> model, N? parent, Iterable<N> children, int index);
 
-class StandardModel<T extends StandardNode<T>> implements _StandardMethods<T> {
+class StandardModel<N extends StandardNode<N>> implements _StandardMethods<N> {
   StandardModel({
-    List<T>? children,
+    List<N>? children,
     this.collapsable = false,
     this.checkable = false,
   }) {
@@ -889,9 +891,9 @@ class StandardModel<T extends StandardNode<T>> implements _StandardMethods<T> {
       _root.appendAll(children);
     }
   }
-  late final StandardNode<T> _root = StandardNode<T>();
+  late final StandardNode<N> _root = StandardNode<N>();
 
-  List<T> get children => _root.children;
+  List<N> get children => _root.children;
 
   int? get dirtyIndexf => _root.dirtyIndexf;
   int? get dirtyIndexl => _root.dirtyIndexl;
@@ -900,32 +902,32 @@ class StandardModel<T extends StandardNode<T>> implements _StandardMethods<T> {
   final bool checkable;
 
   @override
-  void appendAll(Iterable<T> iterable) {
-    _root.appendAll(iterable);
+  void appendAll(List<N> children) {
+    _root.appendAll(children);
   }
 
   @override
-  void insertAll(int index, Iterable<T> iterable) {
-    _root.insertAll(index, iterable);
+  void insertAll(int index, List<N> children) {
+    _root.insertAll(index, children);
   }
 
   @override
-  void removeAll(Iterable<T> iterable) {
-    _root.removeAll(iterable);
+  void removeAll(List<N> children) {
+    _root.removeAll(children);
   }
 
   @override
-  void append(T child) {
+  void append(N child) {
     _root.append(child);
   }
 
   @override
-  void insert(int index, T child) {
+  void insert(int index, N child) {
     _root.insert(index, child);
   }
 
   @override
-  void remove(T child) {
+  void remove(N child) {
     _root.remove(child);
   }
 
@@ -935,30 +937,30 @@ class StandardModel<T extends StandardNode<T>> implements _StandardMethods<T> {
   }
 
   @override
-  T? elementAt(dynamic index) {
+  N? elementAt(dynamic index) {
     return _root.elementAt(index);
   }
 
   @override
-  T? operator [](dynamic index) => _root.elementAt(index);
+  N? operator [](dynamic index) => _root.elementAt(index);
 
   @override
-  void forEach(void Function(T node) action) {
+  void forEach(void Function(N node) action) {
     _root.forEach(action);
   }
 
   @override
-  void removeWhere(bool Function(T node) test) {
+  void removeWhere(bool Function(N node) test) {
     _root.removeWhere(test);
   }
 
   @override
-  void traverseWhere(bool Function(T node) test) {
+  void traverseWhere(bool Function(N node) test) {
     _root.traverseWhere(test);
   }
 
   @override
-  List<T> takeCheckedNodes([TakeMode takeMode = TakeMode.baseOnly]) {
+  List<N> takeCheckedNodes([TakeMode takeMode = TakeMode.baseOnly]) {
     return _root.takeCheckedNodes(takeMode);
   }
 
@@ -1004,7 +1006,7 @@ class StandardModel<T extends StandardNode<T>> implements _StandardMethods<T> {
       _Debug.log('null: _rebuildList();');
     }
 
-    final tempList = <T>[];
+    final tempList = <N>[];
 
     traverseWhere((node) {
       tempList.add(node);
@@ -1014,9 +1016,9 @@ class StandardModel<T extends StandardNode<T>> implements _StandardMethods<T> {
     list.value = tempList;
   }
 
-  final ValueNotifier<List<T>> list = ValueNotifier<List<T>>([]);
+  final ValueNotifier<List<N>> list = ValueNotifier<List<N>>([]);
 
-  set current(T? current) {
+  set current(N? current) {
     if (_current != current) {
       if (_current != null) {
         _current!._current = false;
@@ -1030,68 +1032,68 @@ class StandardModel<T extends StandardNode<T>> implements _StandardMethods<T> {
     }
   }
 
-  T? get current => _current;
+  N? get current => _current;
 
-  T? _current;
+  N? _current;
 
-  late ValueNotifier<T?> currentNotifier = ValueNotifier<T?>(_current);
+  late ValueNotifier<N?> currentNotifier = ValueNotifier<N?>(_current);
 
-  final List<StandardModelChanges<T>> _beforeInsertListeners = [];
-  final List<StandardModelChanges<T>> _afterInsertListeners = [];
-  final List<StandardModelChanges<T>> _beforeRemoveListeners = [];
-  final List<StandardModelChanges<T>> _afterRemoveListeners = [];
+  final List<StandardModelChanges<N>> _beforeInsertListeners = [];
+  final List<StandardModelChanges<N>> _afterInsertListeners = [];
+  final List<StandardModelChanges<N>> _beforeRemoveListeners = [];
+  final List<StandardModelChanges<N>> _afterRemoveListeners = [];
 
-  void addBeforeInsertListener(StandardModelChanges<T> listener) {
+  void addBeforeInsertListener(StandardModelChanges<N> listener) {
     _beforeInsertListeners.add(listener);
   }
 
-  void addAfterInsertListener(StandardModelChanges<T> listener) {
+  void addAfterInsertListener(StandardModelChanges<N> listener) {
     _afterInsertListeners.add(listener);
   }
 
-  void addBeforeRemoveListener(StandardModelChanges<T> listener) {
+  void addBeforeRemoveListener(StandardModelChanges<N> listener) {
     _beforeRemoveListeners.add(listener);
   }
 
-  void addAfterRemoveListener(StandardModelChanges<T> listener) {
+  void addAfterRemoveListener(StandardModelChanges<N> listener) {
     _afterRemoveListeners.add(listener);
   }
 
-  void removeBeforeInsertListener(StandardModelChanges<T> listener) {
+  void removeBeforeInsertListener(StandardModelChanges<N> listener) {
     _beforeInsertListeners.remove(listener);
   }
 
-  void removeAfterInsertListener(StandardModelChanges<T> listener) {
+  void removeAfterInsertListener(StandardModelChanges<N> listener) {
     _afterInsertListeners.remove(listener);
   }
 
-  void removeBeforeRemoveListener(StandardModelChanges<T> listener) {
+  void removeBeforeRemoveListener(StandardModelChanges<N> listener) {
     _beforeRemoveListeners.remove(listener);
   }
 
-  void removeAfterRemoveListener(StandardModelChanges<T> listener) {
+  void removeAfterRemoveListener(StandardModelChanges<N> listener) {
     _afterRemoveListeners.remove(listener);
   }
 
-  void _beforeInsert(StandardModel<T> model, T? parent, Iterable<T> children, int index) {
+  void _beforeInsert(StandardModel<N> model, N? parent, Iterable<N> children, int index) {
     for (final listener in _beforeInsertListeners) {
       listener(model, parent, children, index);
     }
   }
 
-  void _afterInsert(StandardModel<T> model, T? parent, Iterable<T> children, int index) {
+  void _afterInsert(StandardModel<N> model, N? parent, Iterable<N> children, int index) {
     for (final listener in _afterInsertListeners) {
       listener(model, parent, children, index);
     }
   }
 
-  void _beforeRemove(StandardModel<T> model, T? parent, Iterable<T> children, int index) {
+  void _beforeRemove(StandardModel<N> model, N? parent, Iterable<N> children, int index) {
     for (final listener in _beforeRemoveListeners) {
       listener(model, parent, children, index);
     }
   }
 
-  void _afterRemove(StandardModel<T> model, T? parent, Iterable<T> children, int index) {
+  void _afterRemove(StandardModel<N> model, N? parent, Iterable<N> children, int index) {
     for (final listener in _afterRemoveListeners) {
       listener(model, parent, children, index);
     }
