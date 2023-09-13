@@ -865,26 +865,26 @@ class StandardNode<N extends StandardNode<N>> implements _StandardMethods<N> {
   late final ValueNotifier<bool> currentNotifier = ValueNotifier<bool>(_current);
 
   void debugDumpTree() {
-    developer.log("---------- debugDumpTree ----------");
-    _recursiveDebugDumpTree("", 0, 0);
+    developer.log('---------- debugDumpTree ----------');
+    _recursiveDebugDumpTree('', 0, 0);
   }
 
   void _recursiveDebugDumpTree(String indent, int level, int indexl) {
     final key = this.key ?? hashCode.toString();
 
     if (level == 0) {
-      developer.log("level: $_level, index: $_index, dirtyRange($_dirtyIndexf, $_dirtyIndexl), key: $key");
+      developer.log('level: $_level, index: $_index, dirtyRange($_dirtyIndexf, $_dirtyIndexl), key: $key');
     } else {
       if (indexl == 0) {
-        developer.log("$indent└── level: $_level, index: $_index, dirtyRange($_dirtyIndexf, $_dirtyIndexl), key: $key");
+        developer.log('$indent└── level: $_level, index: $_index, dirtyRange($_dirtyIndexf, $_dirtyIndexl), key: $key');
       } else {
-        developer.log("$indent├── level: $_level, index: $_index, dirtyRange($_dirtyIndexf, $_dirtyIndexl), key: $key");
+        developer.log('$indent├── level: $_level, index: $_index, dirtyRange($_dirtyIndexf, $_dirtyIndexl), key: $key');
       }
     }
 
     int childIndexl = _children.length;
     for (final child in _children) {
-      child._recursiveDebugDumpTree(level == 0 ? indent : "    $indent", level + 1, --childIndexl);
+      child._recursiveDebugDumpTree(level == 0 ? indent : '    $indent', level + 1, --childIndexl);
     }
   }
 }
@@ -1110,6 +1110,26 @@ class StandardModel<N extends StandardNode<N>> implements _StandardMethods<N> {
   void _afterRemove(StandardModel<N> model, N? parent, Iterable<N> children, int index) {
     for (final listener in _afterRemoveListeners) {
       listener(model, parent, children, index);
+    }
+  }
+
+  void reset(NodeBuildResult<N>? Function(dynamic data) builder, String data) {
+    _root.clear();
+
+    List<N>? childNodes;
+    dynamic value = jsonDecode(data);
+    if (value != null) {
+      if (value is List) {
+        if (value.isNotEmpty) {
+          childNodes = _createNodes<N>(builder, value);
+        }
+      } else {
+        childNodes = _createNodes<N>(builder, [value]);
+      }
+
+      if (childNodes != null) {
+        _root.appendAll(childNodes);
+      }
     }
   }
 
