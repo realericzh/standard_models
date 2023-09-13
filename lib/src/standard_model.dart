@@ -825,6 +825,16 @@ class StandardNode<N extends StandardNode<N>> implements _StandardMethods<N> {
     }
   }
 
+  Iterable<N> genealogy() {
+    final genealogy = <N>[];
+    N? seek = this as N;
+    while (seek != null) {
+      genealogy.add(seek);
+      seek = seek.parent;
+    }
+    return genealogy.reversed;
+  }
+
   void detach() {
     if (_Debug.debug) {
       _Debug.log('$key: detach();');
