@@ -1146,29 +1146,7 @@ class StandardModel<N extends StandardNode<N>> implements _StandardMethods<N> {
   StandardModel.fromJson(DecodeResult<N>? Function(Map<String, dynamic> data) decode, dynamic data,
       {this.collapsable = false, this.checkable = false}) {
     _root._model = this;
-
-    List<N>? children;
-    if (data is String) {
-      final json = jsonDecode(data);
-      if (json != null) {
-        if (json is List<dynamic>) {
-          if (json.isNotEmpty) {
-            children = _decodeNodes(decode, json);
-          }
-        } else if (json is Map<String, dynamic>) {
-          children = _decodeNodes(decode, [json]);
-        }
-      }
-    } else if (data is List<dynamic>) {
-      if (data.isNotEmpty) {
-        children = _decodeNodes(decode, data);
-      }
-    } else if (data is Map<String, dynamic>) {
-      children = _decodeNodes(decode, [data]);
-    }
-    if (children != null) {
-      _root.appendAll(children);
-    }
+    reset(decode, data);
   }
 
   List<dynamic> toJson(EncodeResult? Function(N node) encode) {
