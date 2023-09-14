@@ -1134,24 +1134,32 @@ class StandardModel<N extends StandardNode<N>> implements _StandardMethods<N> {
     }
   }
 
-  StandardModel.fromJson(NodeBuildResult<N>? Function(dynamic data) builder, String data,
+  StandardModel.fromJson(NodeBuildResult<N>? Function(dynamic data) builder, dynamic data,
       {this.collapsable = false, this.checkable = false}) {
     _root._model = this;
 
     List<N>? childNodes;
-    dynamic value = jsonDecode(data);
-    if (value != null) {
-      if (value is List) {
-        if (value.isNotEmpty) {
-          childNodes = _createNodes<N>(builder, value);
+    if (data is String) {
+      dynamic json = jsonDecode(data);
+      if (json != null) {
+        if (json is List) {
+          if (json.isNotEmpty) {
+            childNodes = _createNodes<N>(builder, json);
+          }
+        } else {
+          childNodes = _createNodes<N>(builder, [json]);
         }
-      } else {
-        childNodes = _createNodes<N>(builder, [value]);
       }
+    } else if (data is List) {
+      if (data.isNotEmpty) {
+        childNodes = _createNodes<N>(builder, data);
+      }
+    } else {
+      childNodes = _createNodes<N>(builder, [data]);
+    }
 
-      if (childNodes != null) {
-        _root.appendAll(childNodes);
-      }
+    if (childNodes != null) {
+      _root.appendAll(childNodes);
     }
   }
 
@@ -1176,6 +1184,8 @@ class StandardModel<N extends StandardNode<N>> implements _StandardMethods<N> {
         }
 
         nodes.add(result.item1);
+      } else {
+        developer.log('failed to create: $data');
       }
     }
 
