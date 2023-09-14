@@ -45,6 +45,16 @@ abstract class _StandardMethods<N extends StandardNode<N>> {
   int get length;
 }
 
+class StandardRoles {
+  static const int editRole = 0;
+  static const int displayRole = 1;
+  static const int decorationRole = 2;
+  static const int backgroundRole = 3;
+  static const int foregroundRole = 4;
+
+  static const int userRole = 0x0100;
+}
+
 class StandardNode<N extends StandardNode<N>> implements _StandardMethods<N> {
   StandardNode({
     this.key,
@@ -846,6 +856,22 @@ class StandardNode<N extends StandardNode<N>> implements _StandardMethods<N> {
     if (this is N) {
       _parent?.remove(this as N);
     }
+  }
+
+  bool setData(int column, int role, dynamic value) {
+    return false;
+  }
+
+  dynamic data(int column, int role) {
+    return null;
+  }
+
+  bool setProperty(String name, dynamic value) {
+    return false;
+  }
+
+  dynamic property(String name) {
+    return null;
   }
 
   void makeCurrent() {
