@@ -892,7 +892,9 @@ class StandardNode<N extends StandardNode<N>> implements _StandardMethods<N> {
 typedef StandardModelChanges<N extends StandardNode<N>> = void Function(
     StandardModel<N> model, N? parent, Iterable<N> children, int index);
 
-typedef NodeBuildResult<N extends StandardNode<N>> = Tuple2<N, dynamic>;
+typedef EncodeResult = Tuple2<Map<String, dynamic>, String?>;
+
+typedef DecodeResult<N extends StandardNode<N>> = Tuple2<N, dynamic>;
 
 class StandardModel<N extends StandardNode<N>> implements _StandardMethods<N> {
   StandardModel({
@@ -1114,81 +1116,109 @@ class StandardModel<N extends StandardNode<N>> implements _StandardMethods<N> {
     }
   }
 
-  void reset(NodeBuildResult<N>? Function(dynamic data) builder, String data) {
+  void reset(DecodeResult<N>? Function(Map<String, dynamic> data) decode, dynamic data) {
     _root.clear();
 
-    List<N>? childNodes;
-    dynamic value = jsonDecode(data);
-    if (value != null) {
-      if (value is List) {
-        if (value.isNotEmpty) {
-          childNodes = _createNodes<N>(builder, value);
+    List<N>? children;
+    if (data is String) {
+      final json = jsonDecode(data);
+      if (json != null) {
+        if (json is List<dynamic>) {
+          if (json.isNotEmpty) {
+            children = _decodeNodes(decode, json);
+          }
+        } else if (json is Map<String, dynamic>) {
+          children = _decodeNodes(decode, [json]);
         }
-      } else {
-        childNodes = _createNodes<N>(builder, [value]);
       }
-
-      if (childNodes != null) {
-        _root.appendAll(childNodes);
+    } else if (data is List<dynamic>) {
+      if (data.isNotEmpty) {
+        children = _decodeNodes(decode, data);
       }
+    } else if (data is Map<String, dynamic>) {
+      children = _decodeNodes(decode, [data]);
+    }
+    if (children != null) {
+      _root.appendAll(children);
     }
   }
 
-  StandardModel.fromJson(NodeBuildResult<N>? Function(dynamic data) builder, dynamic data,
+  StandardModel.fromJson(DecodeResult<N>? Function(Map<String, dynamic> data) decode, dynamic data,
       {this.collapsable = false, this.checkable = false}) {
     _root._model = this;
 
-    List<N>? childNodes;
+    List<N>? children;
     if (data is String) {
-      dynamic json = jsonDecode(data);
+      final json = jsonDecode(data);
       if (json != null) {
-        if (json is List) {
+        if (json is List<dynamic>) {
           if (json.isNotEmpty) {
-            childNodes = _createNodes<N>(builder, json);
+            children = _decodeNodes(decode, json);
           }
-        } else {
-          childNodes = _createNodes<N>(builder, [json]);
+        } else if (json is Map<String, dynamic>) {
+          children = _decodeNodes(decode, [json]);
         }
       }
-    } else if (data is List) {
+    } else if (data is List<dynamic>) {
       if (data.isNotEmpty) {
-        childNodes = _createNodes<N>(builder, data);
+        children = _decodeNodes(decode, data);
       }
-    } else {
-      childNodes = _createNodes<N>(builder, [data]);
+    } else if (data is Map<String, dynamic>) {
+      children = _decodeNodes(decode, [data]);
     }
-
-    if (childNodes != null) {
-      _root.appendAll(childNodes);
+    if (children != null) {
+      _root.appendAll(children);
     }
   }
 
-  static List<N>? _createNodes<N extends StandardNode<N>>(
-      NodeBuildResult<N>? Function(dynamic data) builder, List list) {
-    final nodes = <N>[];
-    for (final data in list) {
-      final result = builder(data);
-      if (result != null) {
-        if (result.item2 != null) {
-          List<N>? childNodes;
-          if (result.item2 is List) {
-            if (result.item2.isNotEmpty) {
-              childNodes = _createNodes(builder, result.item2);
-            }
-          } else {
-            childNodes = _createNodes(builder, [result.item2]);
-          }
-          if (childNodes != null) {
-            result.item1.appendAll(childNodes);
-          }
-        }
+  List<dynamic> toJson(EncodeResult? Function(N node) encode) {
+    return _encodeNodes(_root.children, encode);
+  }
 
-        nodes.add(result.item1);
-      } else {
-        developer.log('failed to create: $data');
+  List<dynamic> _encodeNodes(List<N> children, EncodeResult? Function(N node) encode) {
+    List<dynamic> list = [];
+    for (final child in children) {
+      final result = encode(child);
+      if (result?.item1 == null) {
+        developer.log('encode failed: $child');
+        continue;
       }
-    }
 
-    return nodes;
+      if (child.isNotEmpty) {
+        final list = _encodeNodes(child.children, encode);
+        if (list.isNotEmpty) {
+          result!.item1[result.item2 ?? 'children'] = list;
+        }
+      }
+      list.add(result!.item1);
+    }
+    return list;
+  }
+
+  List<N>? _decodeNodes(DecodeResult<N>? Function(Map<String, dynamic> data) decode, List<dynamic> list) {
+    List<N> children = [];
+    for (final data in list) {
+      final result = decode(data);
+      if (result == null) {
+        developer.log('decode failed: $data');
+        continue;
+      }
+
+      if (result.item2 != null) {
+        List<N>? children;
+        if (result.item2 is List<dynamic>) {
+          if (result.item2.isNotEmpty) {
+            children = _decodeNodes(decode, result.item2);
+          }
+        } else if (result.item2 is Map<String, dynamic>) {
+          children = _decodeNodes(decode, [result.item2]);
+        }
+        if (children != null) {
+          result.item1.appendAll(children);
+        }
+      }
+      children.add(result.item1);
+    }
+    return children.isNotEmpty ? children : null;
   }
 }
