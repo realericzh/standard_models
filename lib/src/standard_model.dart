@@ -858,19 +858,11 @@ class StandardNode<N extends StandardNode<N>> implements _StandardMethods<N> {
     }
   }
 
-  bool setData(int column, int role, dynamic value) {
+  bool setData(int role, dynamic value, [int column = 0]) {
     return false;
   }
 
-  dynamic data(int column, int role) {
-    return null;
-  }
-
-  bool setProperty(String name, dynamic value) {
-    return false;
-  }
-
-  dynamic property(String name) {
+  dynamic data(int role, [int column = 0]) {
     return null;
   }
 
